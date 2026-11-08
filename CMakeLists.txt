@@ -1,35 +1,88 @@
+
 cmake_minimum_required(VERSION 3.20)
-project(CppHomeworks LANGUAGES CXX)
 
-# Включаем современный стандарт языка C++20
-set(CMAKE_CXX_STANDARD 20)
+project(Homework LANGUAGES CXX)
+
+# Используем C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# ==========================================================
-# ДЗ 1 (hw1)
-# ==========================================================
+# Включаем систему тестирования
+enable_testing()
 
-# 1. Программа для тестов корректности (папка hw1/tests/)
-add_executable(hw1_tests hw1/tests/test_main.cpp)
-target_include_directories(hw1_tests PRIVATE hw1)
-
-# Включаем проверку памяти (/fsanitize=address) для Debug-режима
+# Общие настройки компилятора MSVC
 if(MSVC)
-    target_compile_options(hw1_tests PRIVATE $<$<CONFIG:Debug>:/fsanitize=address /Zi>)
-else()
-    target_compile_options(hw1_tests PRIVATE $<$<CONFIG:Debug>:-fsanitize=address -g>)
-    target_link_options(hw1_tests PRIVATE $<$<CONFIG:Debug>:-fsanitize=address>)
+
+    # AddressSanitizer несовместим с /RTC
+    string(REGEX REPLACE "/RTC[^ ]*" ""
+        CMAKE_CXX_FLAGS_DEBUG
+        "${CMAKE_CXX_FLAGS_DEBUG}"
+    )
+
+    # Для санитайзера нужен /Zi вместо /ZI
+    string(REPLACE "/ZI" "/Zi"
+        CMAKE_CXX_FLAGS_DEBUG
+        "${CMAKE_CXX_FLAGS_DEBUG}"
+    )
+
+    add_compile_options(
+        /W4
+        /EHsc
+
+        # Debug: поиск ошибок памяти
+        "$<$<CONFIG:Debug>:/fsanitize=address>"
+        "$<$<CONFIG:Debug>:/Zi>"
+
+        # Release: оптимизация скорости
+        "$<$<CONFIG:Release>:/O2>"
+    )
+
+    # ASan несовместим с incremental linking
+    add_link_options(
+        "$<$<CONFIG:Debug>:/INCREMENTAL:NO>"
+    )
+
 endif()
 
-# ----------------------------------------------------------
+# ======================
+# Домашнее задание 1
+# ======================
 
-# 2. Программа для замеров скорости (папка hw1/bench/)
-add_executable(hw1_bench hw1/bench/bench_main.cpp)
-target_include_directories(hw1_bench PRIVATE hw1)
+add_executable(hw1_tests
+    hw1/tests/test_main.cpp
+)
 
-# Включаем максимальную оптимизацию (/O2) для Release-режима (без санитайзеров)
-if(MSVC)
-    target_compile_options(hw1_bench PRIVATE $<$<CONFIG:Release>:/O2>)
-else()
-    target_compile_options(hw1_bench PRIVATE $<$<CONFIG:Release>:-O2>)
-endif()
+add_executable(hw1_bench
+    hw1/bench/bench_main.cpp
+)
+
+target_include_directories(hw1_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/hw1"
+)
+
+target_include_directories(hw1_bench PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/hw1"
+)
+
+add_test(NAME hw1_correctness COMMAND hw1_tests)
+
+# ======================
+# Домашнее задание 2
+# ======================
+
+add_subdirectory(hw2)
+
+# ======================
+# Домашнее задание 3
+# ======================
+
+# Раскомментируем, когда начнем ДЗ 3
+# add_subdirectory(hw3)
+
+# ======================
+# Домашнее задание 4
+# ======================
+
+# Раскомментируем, когда начнем ДЗ 4
+# add_subdirectory(hw4)
